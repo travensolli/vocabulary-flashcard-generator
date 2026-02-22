@@ -24,22 +24,8 @@ const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1_000;
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-image";
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-    console.warn("Gemini API key not set on server; generation will fail until configured.");
-}
-
-let ai: GoogleGenAI | null = apiKey ? new GoogleGenAI({ apiKey }) : null;
-
-const assertClient = (): GoogleGenAI => {
-    if (!apiKey) {
-        throw new Error("Gemini API key missing on server.");
-    }
-    if (!ai) {
-        ai = new GoogleGenAI({ apiKey });
-    }
-    return ai;
-};
+// Note: Server-side API key is no longer used. Clients must provide their own key.
+let requestAi: GoogleGenAI | null = null;
 
 const sanitizeItem = (raw: string): string => {
     const trimmed = raw.trim().replace(/\s+/g, " ");
@@ -290,10 +276,10 @@ ${getIllustrationGuidelines(item, realism, isColored)}
 ## STRICT CONSTRAINTS — MUST FOLLOW
 ${getConstraints(realism, isColored)}
 ${realism <= 3
-        ? '5. **Do not add shading, gradients, textures, or photographic detail.** Keep it intentionally simple.'
-        : realism === 4
-            ? '5. **Use semi-realistic detail only.** Avoid full photographic realism.'
-            : '5. **Photographic realism is mandatory.** Avoid illustration-like line art.'}
+            ? '5. **Do not add shading, gradients, textures, or photographic detail.** Keep it intentionally simple.'
+            : realism === 4
+                ? '5. **Use semi-realistic detail only.** Avoid full photographic realism.'
+                : '5. **Photographic realism is mandatory.** Avoid illustration-like line art.'}
 
 ---
 
@@ -330,7 +316,7 @@ const isRetryable = (err: unknown): boolean => {
 
 app.post('/api/generate', async (req, res) => {
     try {
-        const { item, isColored, realism } = req.body;
+        const { item, isColored, realism, apiKey: clientApiKey, model: clientModel } = req.body;
         if (!item || typeof item !== 'string') {
             return res.status(400).json({ error: "Missing or invalid 'item' field." });
         }
@@ -338,14 +324,23 @@ app.post('/api/generate', async (req, res) => {
         const realismLevel = typeof realism === 'number' ? realism : 3;
         const sanitized = sanitizeItem(item);
         const prompt = createFlashcardPrompt(sanitized, realismLevel, !!isColored);
-        const client = assertClient();
+
+        if (!clientApiKey) {
+            return res.status(400).json({ error: "Gemini API key is missing. Please provide your API key in the application settings." });
+        }
+
+        // Use client-provided model or fallback to server default
+        const effectiveModel = clientModel || MODEL;
+
+        // Create a temporary client instance for this request
+        const requestAi = new GoogleGenAI({ apiKey: clientApiKey });
 
         let lastError: unknown;
 
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             try {
-                const response = await client.models.generateContent({
-                    model: MODEL,
+                const response = await requestAi.models.generateContent({
+                    model: effectiveModel,
                     contents: { parts: [{ text: prompt }] },
                     config: {
                         temperature: 0.3,

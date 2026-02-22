@@ -9,6 +9,10 @@ interface GeneratorFormProps {
   onColorChange: (colored: boolean) => void;
   realism: number;
   onRealismChange: (level: number) => void;
+  apiKey: string;
+  onApiKeyChange: (key: string) => void;
+  model: string;
+  onModelChange: (model: string) => void;
 }
 
 const initialItems = "Guitar, drums, electric guitar, flute, piano, violin, cello";
@@ -21,17 +25,64 @@ const REALISM_LABELS: Record<number, string> = {
   5: 'Photorealistic',
 };
 
-export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoading, isColored, onColorChange, realism, onRealismChange }) => {
+export const GeneratorForm: React.FC<GeneratorFormProps> = ({
+  onGenerate,
+  isLoading,
+  isColored,
+  onColorChange,
+  realism,
+  onRealismChange,
+  apiKey,
+  onApiKeyChange,
+  model,
+  onModelChange
+}) => {
   const [inputText, setInputText] = useState<string>(initialItems);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!apiKey.trim()) {
+      alert("Please enter your Gemini API Key to continue.");
+      return;
+    }
     onGenerate(inputText);
   };
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-lg">
       <form onSubmit={handleSubmit}>
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="api-key" className="block text-sm font-semibold text-gray-700 mb-1">
+              Gemini API Key (Required)
+            </label>
+            <input
+              id="api-key"
+              type="password"
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+              placeholder="Enter your API Key"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out text-sm"
+              disabled={isLoading}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="model-select" className="block text-sm font-semibold text-gray-700 mb-1">
+              Model (Optional)
+            </label>
+            <input
+              id="model-select"
+              type="text"
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              placeholder="e.g., gemini-2.0-flash-exp"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out text-sm"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
         <label htmlFor="items-input" className="block text-lg font-semibold text-gray-700 mb-2">
           Items to Generate
         </label>
