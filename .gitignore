@@ -10,6 +10,20 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.cache
+.parcel-cache
+coverage
+.nyc_output
+.eslintcache
+*.tsbuildinfo
+*.log.old*
+.turbo
+.vercel
+.netlify
+tmp
+.tmp
+Thumbs.db
+ehthumbs.db
 *.local
 *.env
 *.env.local
@@ -17,8 +31,10 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+.vscode/tasks.json
 .idea
 .DS_Store
+.fleet
 *.suo
 *.ntvs*
 *.njsproj
