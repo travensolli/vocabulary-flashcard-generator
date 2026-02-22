@@ -23,12 +23,18 @@ Aplicação web que gera flashcards de vocabulário infantil usando IA generativ
 
 ## Stack & Requisitos
 
+### Essenciais para Instalação
+Para clonar e rodar este projeto em sua máquina, você precisará ter instalado:
+- **[Git](https://git-scm.com/downloads)**: Para clonar o repositório.
+- **[Node.js](https://nodejs.org/) (≥ 18)**: Execução de javascript e gerenciador de pacotes `npm` incluso.
+
+### Tecnologias Utilizadas
 | Tecnologia | Versão |
 |------------|--------|
-| Node.js | ≥ 18 (recomendado) |
 | React | 19 |
 | Vite | 6 |
 | TypeScript | ~5.8 |
+| Express | ^5.2.1 |
 | @google/genai | ^1.38.0 |
 | Gerenciador de pacotes | npm |
 | CSS | Tailwind CSS (via CDN) |
@@ -40,7 +46,7 @@ Aplicação web que gera flashcards de vocabulário infantil usando IA generativ
 
 ```bash
 # clonar o repositório
-git clone https://github.com/<seu-usuario>/vocabulary-flashcard-generator.git
+git clone https://github.com/travensolli/vocabulary-flashcard-generator.git
 cd vocabulary-flashcard-generator
 
 # instalar dependências
@@ -51,20 +57,31 @@ npm install
 
 ## Configuração
 
-Crie um arquivo `.env.local` na raiz do projeto com as variáveis abaixo:
+### 1. Obter a Chave da API do Gemini
+
+A aplicação utiliza o **Google Gemini** para gerar as imagens. Siga os passos para obter sua chave gratuitamente:
+1. Acesse o **[Google AI Studio](https://aistudio.google.com/)**.
+2. Faça login com sua conta do Google.
+3. No painel principal ou no menu esquerdo, clique em **"Get API key"**.
+4. Clique no botão azul **"Create API key"** (você pode precisar criar um projeto no Google Cloud caso ainda não tenha).
+5. Copie a chave gerada.
+
+### 2. Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto com as variáveis abaixo (cole a sua chave no lugar indicado):
 
 ```env
-GEMINI_API_KEY=<sua-chave-da-api-gemini>
+GEMINI_API_KEY=<sua-chave-copiada-do-ai-studio>
 GEMINI_MODEL=gemini-2.5-flash-image   # opcional
 ```
 
 | Variável | Obrigatória | Default | Descrição |
 |----------|:-----------:|---------|-----------|
-| `GEMINI_API_KEY` | ✅ | — | Chave da API Google Gemini. Injetada via `vite.config.ts` como `process.env.GEMINI_API_KEY`. |
-| `GEMINI_MODEL` | ❌ | `gemini-2.5-flash-image` | Modelo Gemini utilizado para geração de imagens. Pode ser alterado para versões mais recentes. |
+| `GEMINI_API_KEY` | ✅ | — | Chave da API Google Gemini. Utilizada com segurança apenas no backend (Node.js). |
+| `GEMINI_MODEL` | ❌ | `gemini-2.5-flash-image` | Modelo Gemini utilizado para geração de imagens. |
 
 > [!IMPORTANT]
-> O arquivo `.env.local` está no `.gitignore` — **nunca** versione suas chaves de API.
+> O arquivo `.env.local` está no `.gitignore` e agora é lido apenas pelo servidor Express, garantindo que a chave não seja exposta ao front-end.
 
 ---
 
@@ -72,10 +89,11 @@ GEMINI_MODEL=gemini-2.5-flash-image   # opcional
 
 | Script | Comando | Descrição |
 |--------|---------|-----------|
-| Dev server | `npm run dev` | Inicia o Vite em `http://localhost:3000` com hot reload. |
-| Build | `npm run build` | Gera bundle de produção em `dist/`. |
-| Preview | `npm run preview` | Serve localmente o conteúdo de `dist/`. |
-| Testes | `npm run test` | Executa os testes com Vitest. |
+| Dev server | `npm run dev` | Inicia o frontend em `localhost:3000` (Vite) e o backend em `localhost:3001` (com proxy automático). |
+| Build (Full) | `npm run build` | Gera bundle de produção em `dist/` (frontend) e compila o servidor TypeScript em `dist-server/`. |
+| Start (Prod) | `npm start` | Inicia o servidor Node compilado, que atende a API e serve a aplicação estática. |
+| Preview | `npm run preview` | Serve localmente o frontend via Vite. |
+| Testes | `npm run test` | Executa os testes unitários do código agnóstico com Vitest. |
 
 ```bash
 # workflow mais comum durante o desenvolvimento
@@ -104,46 +122,32 @@ npm run dev
 
 ## Arquitetura & Estrutura
 
-SPA em React + TypeScript: recebe entrada textual, chama a API Gemini para gerar uma imagem de flashcard por item e renderiza os cartões com opção de download.
+Aplicação Fullstack simples:
+- **Frontend (React + Vite)**: Interface do usuário para inserção de palavras.
+- **Backend (Express)**: Proxy seguro que detém a `GEMINI_API_KEY` e chama a Google GenAI API.
 
 ```
 .
-├── .env.local                # Variáveis de ambiente (não versionado)
-├── .github/
-│   └── .prompts/             # Prompts de automação (ex.: geração de README)
-├── __tests__/
-│   ├── geminiService.test.ts # Testes do serviço Gemini
-│   └── items.test.ts         # Testes do utilitário de parsing
-├── components/
-│   ├── GeneratorForm.tsx     # Formulário de entrada + toggle de cor
-│   ├── Header.tsx            # Hero / título da página
-│   ├── Icons.tsx             # Ícones SVG inline (Sparkles, Download)
-│   ├── ImageGrid.tsx         # Galeria responsiva com overlay de download
-│   └── Spinner.tsx           # Indicador de carregamento
+├── .env.local                # Variáveis de ambiente (lidas pelo Express)
+├── server/
+│   └── server.ts             # Backend Express (rotas base /api/*)
+├── src/                      # (se aplicável), mas projeto raiz tem:
+├── components/               # Componentes UI (React)
 ├── services/
-│   └── geminiService.ts      # Prompt engineering + chamada @google/genai
-├── utils/
-│   └── items.ts              # Parsing, dedup e limitação de itens
-├── App.tsx                   # Shell principal: estado, orquestração e layout
-├── index.html                # HTML entry-point (Tailwind via CDN)
-├── index.tsx                 # Bootstrap React (createRoot)
-├── types.ts                  # Tipos compartilhados (CardData)
-├── vite.config.ts            # Configuração Vite (env, aliases, vitest)
-├── tsconfig.json             # Configuração TypeScript
-└── package.json              # Dependências e scripts
+│   └── geminiService.ts      # Fetch call para o nosso backend Node
+├── utils/                    # Funções agnósticas (dedup)
+├── dist/                     # Saída do build Vite (Frontend)
+├── dist-server/              # Saída do build tsc (Backend)
 ```
 
 ### Fluxo de dados
 
 ```mermaid
 flowchart LR
-    A[Usuário digita palavras] --> B[GeneratorForm]
-    B --> C[App.tsx – handleGenerate]
-    C --> D[parseItems – dedup & limit]
-    D --> E[geminiService – generateFlashcard]
-    E --> F[Google Gemini API]
-    F --> G[Data URI base64]
-    G --> H[ImageGrid – exibe & download]
+    A[UI React] -->|POST /api/generate| B[Express Server]
+    B -->|SDK GenAI| C[Google Gemini API]
+    C -->|Base64 Image| B
+    B -->|JSON {url}| A
 ```
 
 ---
@@ -169,16 +173,14 @@ npm run test
 
 ## Deploy
 
-1. Configure `GEMINI_API_KEY` no ambiente de hospedagem.
-2. Gere o bundle de produção:
-   ```bash
-   npm run build
-   ```
-3. Sirva o conteúdo de `dist/` em qualquer host estático:
-   - **Vercel** · **Netlify** · **GitHub Pages** · **Azure Static Web Apps**
+Como a aplicação agora possui um servidor Node.js, ela deve ser hospedada em serviços que suportem Node:
 
-> [!WARNING]
-> A chave da API Gemini é exposta no bundle do cliente (injetada via `define` no Vite). Para produção, considere implementar um proxy/backend que mantenha a chave segura no servidor.
+1. Configure a variável `GEMINI_API_KEY` na plataforma de hospedagem (Render, Railway, Heroku, etc).
+2. O comando de **build** deve ser o padrão `npm run build` (que faz build do front e back).
+3. O comando de **inicialização** deve ser `npm start`.
+
+> [!NOTE]
+> Para hosts estáticos puros (como Vercel/Netlify sem backend Serverless extra), considere migrar a lógica de `server/server.ts` para arquivos como `api/generate.ts` (convenção Edge/Serverless da Vercel).
 
 ---
 
