@@ -1,0 +1,5 @@
+{
+  "name": "Vocabulary Flashcard Generator",
+  "description": "An AI-powered application to generate simple, black-and-white vocabulary flashcards for children. Enter a comma-separated list of items to create clear, printable line-art illustrations with labels, perfect for educational purposes.",
+  "requestFramePermissions": []
+}
