@@ -6,18 +6,20 @@ import { ImageGrid } from './components/ImageGrid';
 import { Spinner } from './components/Spinner';
 import { generateFlashcard } from './services/geminiService';
 import type { CardData } from './types';
+import { parseItems, DEFAULT_MAX_ITEMS } from './utils/items';
 
 const App: React.FC = () => {
   const [generatedCards, setGeneratedCards] = useState<CardData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const CONCURRENCY_LIMIT = 4;
 
   const handleGenerate = async (inputText: string) => {
     setIsLoading(true);
     setError(null);
     setGeneratedCards([]);
 
-    const items = inputText.split(',').map(item => item.trim()).filter(Boolean);
+    const items = parseItems(inputText, DEFAULT_MAX_ITEMS);
 
     if (items.length === 0) {
       setError("Please enter at least one item to generate.");
@@ -26,12 +28,35 @@ const App: React.FC = () => {
     }
 
     try {
-      const promises = items.map(async (item) => {
-        const imageUrl = await generateFlashcard(item);
-        return { url: imageUrl, name: item };
-      });
+      const results: CardData[] = [];
+      const failures: string[] = [];
 
-      const results = await Promise.all(promises);
+      for (let i = 0; i < items.length; i += CONCURRENCY_LIMIT) {
+        const batch = items.slice(i, i + CONCURRENCY_LIMIT);
+
+        const settled = await Promise.allSettled(
+          batch.map(async (item) => ({ url: await generateFlashcard(item), name: item }))
+        );
+
+        settled.forEach((result, idx) => {
+          const currentItem = batch[idx];
+          if (result.status === "fulfilled") {
+            results.push(result.value);
+          } else {
+            failures.push(currentItem);
+          }
+        });
+      }
+
+      if (results.length === 0) {
+        setError("Failed to generate images. Please ensure your API key is correctly configured and try again.");
+        return;
+      }
+
+      if (failures.length > 0) {
+        setError(`Could not generate flashcards for: ${failures.join(", ")}`);
+      }
+
       setGeneratedCards(results);
     } catch (e) {
       console.error(e);
@@ -61,7 +86,7 @@ const App: React.FC = () => {
               <span className="block sm:inline ml-2">{error}</span>
             </div>
           )}
-          {!isLoading && !error && generatedCards.length > 0 && (
+          {!isLoading && generatedCards.length > 0 && (
             <ImageGrid cards={generatedCards} />
           )}
           {!isLoading && !error && generatedCards.length === 0 && (
