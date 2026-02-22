@@ -10,8 +10,10 @@ interface ImageGridProps {
 export const ImageGrid: React.FC<ImageGridProps> = ({ cards }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-      {cards.map((card, index) => (
-        <div key={index} className="group relative bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-xl">
+      {cards.map((card) => {
+        const cardKey = card.name.trim().toLowerCase().replace(/\s+/g, "-") || card.url;
+        return (
+        <div key={cardKey} className="group relative bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-xl">
           <img 
             src={card.url} 
             alt={`Flashcard for ${card.name}`} 
@@ -28,7 +30,8 @@ export const ImageGrid: React.FC<ImageGridProps> = ({ cards }) => {
             </a>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
