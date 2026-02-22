@@ -5,11 +5,13 @@ import { SparklesIcon } from './Icons';
 interface GeneratorFormProps {
   onGenerate: (inputText: string) => void;
   isLoading: boolean;
+  isColored: boolean;
+  onColorChange: (colored: boolean) => void;
 }
 
 const initialItems = "Guitar, drums, electric guitar, flute, piano, violin, cello";
 
-export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoading }) => {
+export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoading, isColored, onColorChange }) => {
   const [inputText, setInputText] = useState<string>(initialItems);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,6 +36,27 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoad
           className="w-full h-28 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out resize-y"
           disabled={isLoading}
         />
+        <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2">
+            <span className="text-xl" aria-hidden="true">🎨</span>
+            <label htmlFor="color-toggle" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+              Colored flashcards
+            </label>
+          </div>
+          <button
+            id="color-toggle"
+            type="button"
+            role="switch"
+            aria-checked={isColored}
+            onClick={() => onColorChange(!isColored)}
+            disabled={isLoading}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isColored ? 'bg-indigo-600' : 'bg-gray-300'}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isColored ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
         <button
           type="submit"
           disabled={isLoading}
@@ -58,3 +81,4 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoad
     </div>
   );
 };
+

@@ -11,21 +11,14 @@ const MAX_RETRIES = 2;
 /** Base delay (ms) for exponential back-off between retries. */
 const BASE_DELAY_MS = 1_000;
 
-/** Model used for image generation. */
-const MODEL = "gemini-3-pro-image-preview";
+/** Model used for image generation (configurable via GEMINI_MODEL env var). */
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-preview-image-generation";
 
 // ---------------------------------------------------------------------------
 // API key & client bootstrap
 // ---------------------------------------------------------------------------
 
-// Vite exposes env vars as import.meta.env; keep a fallback for node-style envs in case of SSR/tests.
-const apiKey =
-  (typeof import.meta !== "undefined"
-    ? import.meta.env?.VITE_GEMINI_API_KEY
-    : undefined) ||
-  (typeof process !== "undefined"
-    ? process.env?.GEMINI_API_KEY
-    : undefined);
+const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
   console.warn(
@@ -177,6 +170,68 @@ Generate **one** print-ready vocabulary flashcard image for the item: **"${item}
 `.trim();
 };
 
+const createColorPrompt = (item: string): string => {
+  const label = item.toUpperCase();
+
+  return `
+# ROLE
+You are a senior children's-book illustrator who specialises in bold, vibrant, full-colour vocabulary flashcards for pre-school learners (ages 3–6).
+
+# OBJECTIVE
+Generate **one** print-ready vocabulary flashcard image for the item: **"${item}"**.
+
+---
+
+## CARD SPECIFICATIONS
+
+### Dimensions & Layout
+| Zone | Proportion | Content |
+|------|-----------|---------|
+| Outer card | 3 : 4 portrait ratio | Solid black rounded-corner border (≈ 3 % of card width) on a pure-white background. |
+| Illustration area | Top 75 % of the inner card | Centred, bold, full-colour drawing of "${item}". |
+| Divider | — | A single, solid black horizontal line spanning the full inner width, separating the two areas. |
+| Label area | Bottom 25 % of the inner card | The word **"${label}"** centred in **Montserrat Extra-Bold (800 weight)** typeface. |
+
+### Illustration Guidelines
+- **Style**: Flat-vector with bold black outlines (uniform stroke weight ≈ 2–3 pt equivalent). All enclosed areas filled with **vibrant, saturated, child-friendly colours**.
+- **Colour palette**: Use bright, cheerful, highly saturated colours appropriate for a children's educational card. Prefer primary and secondary colours (red, blue, yellow, green, orange, purple) with natural tones where appropriate.
+- **Recognisability**: The drawing must be instantly identifiable by a 5-year-old child. Prefer the most iconic, canonical view of "${item}" (e.g. a red apple shown from the side with a brown stem and green leaf).
+- **Simplicity**: Use clean, flat areas of colour with no gradients, no textures, and no 3D shading. Keep the design simple and bold.
+- **Centering**: The illustration must be visually centred (optically balanced) with comfortable padding from the border.
+
+### Typography Guidelines — Font: Montserrat Extra-Bold 800
+- The label text is **"${label}"** — reproduce these exact characters.
+- **Font**: Use **exactly Montserrat Extra-Bold (weight 800)**, a geometric sans-serif typeface. Do NOT substitute any other font.
+- Key Montserrat traits to reproduce: perfectly circular "O", flat-top "A" without serif, square-shouldered "E" and "F", single-storey "a" at display sizes, wide and open letter proportions.
+- The text must be horizontally and vertically centred within the label area.
+- Letter-spacing should be slightly expanded (~5 % tracking) for readability.
+- Text colour is pure black (#000000) on white background — no outline, no shadow, no effects on the text.
+
+---
+
+## STRICT CONSTRAINTS — MUST FOLLOW
+1. **Use flat, vibrant colours** for the illustration. No gradients, no textures, no halftones.
+2. **Bold black outlines** around all colour areas.
+3. **No shading, shadows, or 3D effects.**
+4. **No extra text, captions, logos, or watermarks** — only the item name in the label area.
+5. **No background scenery or secondary objects** — the card interior is pure white except for the illustration and label.
+6. **Maintain consistent stroke weight** throughout the entire illustration.
+7. **The card must stand alone** — do not render a table, hand, or any object holding the card.
+8. **Font must be Montserrat Extra-Bold 800** — do not use any other typeface for the label.
+
+---
+
+## QUALITY CHECKLIST (verify before outputting)
+- [ ] Card has a visible rounded-border frame.
+- [ ] There is a clear horizontal divider between illustration and label.
+- [ ] The illustration is centred, recognisable, and vibrantly coloured.
+- [ ] The label reads exactly "${label}".
+- [ ] The label uses Montserrat Extra-Bold 800 letterforms (geometric, even weight, wide proportions).
+- [ ] Colours are bright, flat, and child-friendly — no gradients or textures.
+- [ ] No extraneous elements exist on or around the card.
+`.trim();
+};
+
 // ---------------------------------------------------------------------------
 // Retry helper
 // ---------------------------------------------------------------------------
@@ -208,9 +263,9 @@ const isRetryable = (err: unknown): boolean => {
 // Public API
 // ---------------------------------------------------------------------------
 
-export const generateFlashcard = async (item: string): Promise<string> => {
+export const generateFlashcard = async (item: string, isColored: boolean = false): Promise<string> => {
   const sanitized = sanitizeItem(item);
-  const prompt = createPrompt(sanitized);
+  const prompt = isColored ? createColorPrompt(sanitized) : createPrompt(sanitized);
   const client = assertClient();
 
   let lastError: unknown;

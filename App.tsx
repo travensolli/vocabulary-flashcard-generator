@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [generatedCards, setGeneratedCards] = useState<CardData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isColored, setIsColored] = useState<boolean>(false);
   const CONCURRENCY_LIMIT = 4;
 
   const handleGenerate = async (inputText: string) => {
@@ -35,7 +36,7 @@ const App: React.FC = () => {
         const batch = items.slice(i, i + CONCURRENCY_LIMIT);
 
         const settled = await Promise.allSettled(
-          batch.map(async (item) => ({ url: await generateFlashcard(item), name: item }))
+          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored), name: item }))
         );
 
         settled.forEach((result, idx) => {
@@ -70,7 +71,7 @@ const App: React.FC = () => {
     <div className="min-h-screen font-sans text-gray-800 antialiased">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
-        <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} />
+        <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} isColored={isColored} onColorChange={setIsColored} />
 
         <div className="mt-12">
           {isLoading && (
@@ -87,15 +88,15 @@ const App: React.FC = () => {
             </div>
           )}
           {!isLoading && generatedCards.length > 0 && (
-            <ImageGrid cards={generatedCards} />
+            <ImageGrid cards={generatedCards} isColored={isColored} />
           )}
           {!isLoading && !error && generatedCards.length === 0 && (
             <div className="text-center text-gray-500 py-16 px-6 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-2">Welcome to the Flashcard Generator!</h2>
-                <p className="max-w-2xl mx-auto">
-                    Enter a list of words in the box above to create beautiful, print-ready vocabulary cards for kids.
-                    For example: <span className="font-mono bg-gray-200 text-gray-800 py-1 px-2 rounded">apple, book, car</span>
-                </p>
+              <h2 className="text-2xl font-semibold text-gray-700 mb-2">Welcome to the Flashcard Generator!</h2>
+              <p className="max-w-2xl mx-auto">
+                Enter a list of words in the box above to create beautiful, print-ready vocabulary cards for kids.
+                For example: <span className="font-mono bg-gray-200 text-gray-800 py-1 px-2 rounded">apple, book, car</span>
+              </p>
             </div>
           )}
         </div>
@@ -105,3 +106,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
