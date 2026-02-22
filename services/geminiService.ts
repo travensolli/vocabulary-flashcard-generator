@@ -12,7 +12,7 @@ const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1_000;
 
 /** Model used for image generation (configurable via GEMINI_MODEL env var). */
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-preview-image-generation";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-image";
 
 // ---------------------------------------------------------------------------
 // API key & client bootstrap
