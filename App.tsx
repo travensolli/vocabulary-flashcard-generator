@@ -14,6 +14,8 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isColored, setIsColored] = useState<boolean>(false);
   const [realism, setRealism] = useState<number>(3);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [model, setModel] = useState<string>('');
   const CONCURRENCY_LIMIT = 4;
 
   const handleGenerate = async (inputText: string) => {
@@ -37,7 +39,7 @@ const App: React.FC = () => {
         const batch = items.slice(i, i + CONCURRENCY_LIMIT);
 
         const settled = await Promise.allSettled(
-          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism), name: item }))
+          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism, apiKey, model), name: item }))
         );
 
         settled.forEach((result, idx) => {
@@ -72,7 +74,18 @@ const App: React.FC = () => {
     <div className="min-h-screen font-sans text-gray-800 antialiased">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
-        <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} isColored={isColored} onColorChange={setIsColored} realism={realism} onRealismChange={setRealism} />
+        <GeneratorForm
+          onGenerate={handleGenerate}
+          isLoading={isLoading}
+          isColored={isColored}
+          onColorChange={setIsColored}
+          realism={realism}
+          onRealismChange={setRealism}
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
+          model={model}
+          onModelChange={setModel}
+        />
 
         <div className="mt-12">
           {isLoading && (
