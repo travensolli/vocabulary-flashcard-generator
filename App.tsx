@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isColored, setIsColored] = useState<boolean>(false);
+  const [realism, setRealism] = useState<number>(3);
   const CONCURRENCY_LIMIT = 4;
 
   const handleGenerate = async (inputText: string) => {
@@ -36,7 +37,7 @@ const App: React.FC = () => {
         const batch = items.slice(i, i + CONCURRENCY_LIMIT);
 
         const settled = await Promise.allSettled(
-          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored), name: item }))
+          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism), name: item }))
         );
 
         settled.forEach((result, idx) => {
@@ -71,7 +72,7 @@ const App: React.FC = () => {
     <div className="min-h-screen font-sans text-gray-800 antialiased">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
-        <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} isColored={isColored} onColorChange={setIsColored} />
+        <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} isColored={isColored} onColorChange={setIsColored} realism={realism} onRealismChange={setRealism} />
 
         <div className="mt-12">
           {isLoading && (
@@ -88,7 +89,7 @@ const App: React.FC = () => {
             </div>
           )}
           {!isLoading && generatedCards.length > 0 && (
-            <ImageGrid cards={generatedCards} isColored={isColored} />
+            <ImageGrid cards={generatedCards} isColored={isColored} realism={realism} />
           )}
           {!isLoading && !error && generatedCards.length === 0 && (
             <div className="text-center text-gray-500 py-16 px-6 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">

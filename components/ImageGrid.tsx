@@ -6,15 +6,17 @@ import { DownloadIcon } from './Icons';
 interface ImageGridProps {
   cards: CardData[];
   isColored: boolean;
+  realism: number;
 }
 
-export const ImageGrid: React.FC<ImageGridProps> = ({ cards, isColored }) => {
+export const ImageGrid: React.FC<ImageGridProps> = ({ cards, isColored, realism }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
       {cards.map((card) => {
         const cardKey = card.name.trim().toLowerCase().replace(/\s+/g, "-") || card.url;
         const safeName = card.name.replace(/\s+/g, '_').toLowerCase();
-        const downloadName = isColored ? `${safeName}_color_flashcard.png` : `${safeName}_flashcard.png`;
+        const colorSuffix = isColored ? '_color' : '';
+        const downloadName = `${safeName}_r${realism}${colorSuffix}_flashcard.png`;
         return (
           <div key={cardKey} className="group relative bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-xl">
             <img

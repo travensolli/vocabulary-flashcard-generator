@@ -2,13 +2,13 @@
 // Client API Service
 // ---------------------------------------------------------------------------
 
-export const generateFlashcard = async (item: string, isColored: boolean = false): Promise<string> => {
+export const generateFlashcard = async (item: string, isColored: boolean = false, realism: number = 3): Promise<string> => {
   const response = await fetch('/api/generate', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ item, isColored }),
+    body: JSON.stringify({ item, isColored, realism }),
   });
 
   if (!response.ok) {

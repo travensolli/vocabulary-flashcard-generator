@@ -7,11 +7,21 @@ interface GeneratorFormProps {
   isLoading: boolean;
   isColored: boolean;
   onColorChange: (colored: boolean) => void;
+  realism: number;
+  onRealismChange: (level: number) => void;
 }
 
 const initialItems = "Guitar, drums, electric guitar, flute, piano, violin, cello";
 
-export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoading, isColored, onColorChange }) => {
+const REALISM_LABELS: Record<number, string> = {
+  1: 'Cartoon',
+  2: 'Stylized',
+  3: 'Standard',
+  4: 'Detailed',
+  5: 'Photorealistic',
+};
+
+export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoading, isColored, onColorChange, realism, onRealismChange }) => {
   const [inputText, setInputText] = useState<string>(initialItems);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,6 +66,41 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isLoad
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isColored ? 'translate-x-5' : 'translate-x-0'}`}
             />
           </button>
+        </div>
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl" aria-hidden="true">🎯</span>
+              <label htmlFor="realism-slider" className="text-sm font-medium text-gray-700 select-none">
+                Realism / Fidelity
+              </label>
+            </div>
+            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              {REALISM_LABELS[realism]}
+            </span>
+          </div>
+          <input
+            id="realism-slider"
+            type="range"
+            min={1}
+            max={5}
+            step={1}
+            value={realism}
+            onChange={(e) => onRealismChange(Number(e.target.value))}
+            disabled={isLoading}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <div className="flex justify-between mt-1 px-0.5">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <span
+                key={level}
+                className={`text-[10px] cursor-pointer select-none transition-colors ${realism === level ? 'text-indigo-600 font-bold' : 'text-gray-400'}`}
+                onClick={() => !isLoading && onRealismChange(level)}
+              >
+                {REALISM_LABELS[level]}
+              </span>
+            ))}
+          </div>
         </div>
         <button
           type="submit"
