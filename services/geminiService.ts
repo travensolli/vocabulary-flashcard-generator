@@ -1,16 +1,41 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 
 // Vite exposes env vars as import.meta.env; keep a fallback for node-style envs in case of SSR/tests.
 const apiKey = (typeof import.meta !== "undefined" ? import.meta.env?.VITE_GEMINI_API_KEY : undefined)
   || (typeof process !== "undefined" ? process.env?.GEMINI_API_KEY : undefined);
 
 if (!apiKey) {
-  throw new Error("GEMINI_API_KEY (or VITE_GEMINI_API_KEY) environment variable not set");
+  console.warn("Gemini API key not set; generation will fail until configured.");
 }
 
-const ai = new GoogleGenAI({ apiKey });
-const model = 'gemini-2.5-flash-image';
+let ai: GoogleGenAI | null = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const model = "gemini-2.5-flash-image";
+
+const assertClient = () => {
+  if (!apiKey) {
+    throw new Error("Gemini API key missing. Set VITE_GEMINI_API_KEY before generating.");
+  }
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+};
+
+export const extractInlineImageData = (response: GenerateContentResponse, item: string) => {
+  const candidates = response.candidates ?? [];
+  const parts = candidates[0]?.content?.parts ?? [];
+
+  for (const part of parts) {
+    if (part.inlineData) {
+      const base64EncodeString: string = part.inlineData.data;
+      const mimeType = part.inlineData.mimeType;
+      return `data:${mimeType};base64,${base64EncodeString}`;
+    }
+  }
+
+  throw new Error(`No image data found in response for item: ${item}`);
+};
 
 const createPrompt = (item: string) => `
 You are an expert image generator. Your goal is to create any item requested by the user, always in the same visual style, inspired by black and white city place cards. These illustrations will be used in black and white English books for children up to 9 years old, for teaching vocabulary. Therefore, the images must be clear, simple, and easy to understand.
@@ -62,27 +87,19 @@ Generate a flashcard for the following item: "${item}"
 
 export const generateFlashcard = async (item: string): Promise<string> => {
     try {
-        const prompt = createPrompt(item);
+      const prompt = createPrompt(item);
+      const client = assertClient();
 
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: {
-                parts: [{ text: prompt }],
-            },
-        });
+      const response = await client.models.generateContent({
+        model: model,
+        contents: {
+          parts: [{ text: prompt }],
+        },
+      });
 
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                const base64EncodeString: string = part.inlineData.data;
-                const mimeType = part.inlineData.mimeType;
-                return `data:${mimeType};base64,${base64EncodeString}`;
-            }
-        }
-        
-        throw new Error(`No image data found in response for item: ${item}`);
-
+      return extractInlineImageData(response, item);
     } catch (error) {
-        console.error(`Error generating flashcard for "${item}":`, error);
-        throw new Error(`Failed to generate flashcard for "${item}".`);
+      console.error(`Error generating flashcard for "${item}":`, error);
+      throw new Error(`Failed to generate flashcard for "${item}".`);
     }
 };
