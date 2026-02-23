@@ -190,23 +190,29 @@ export const generateFlashcard = async (
 ): Promise<string> => {
   if (!apiKey) throw new Error("API key is required.");
 
-  const genAI = new GoogleGenAI(apiKey);
-  const effectiveModel = model || FALLBACK_MODEL;
+  // Use the exact same initialization sequence as the previously working server
+  const genAI = new GoogleGenAI({
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
+  const effectiveModel = model || "gemini-2.5-flash-image"; // Reverting to server's default
   const sanitized = sanitizeItem(item);
   const prompt = createFlashcardPrompt(sanitized, realism, isColored);
 
   let lastError: any;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const modelInstance = genAI.getGenerativeModel({ model: effectiveModel });
-      const result = await modelInstance.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3 }
+      const response = await genAI.models.generateContent({
+        model: effectiveModel,
+        contents: prompt,
+        config: {
+          temperature: 0.3,
+        }
       });
 
-      const response = await result.response;
       return extractInlineImageData(response, sanitized);
     } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed for "${item}":`, error);
       lastError = error;
       if (attempt < MAX_RETRIES && isRetryable(error)) {
         await sleep(BASE_DELAY_MS * 2 ** attempt);

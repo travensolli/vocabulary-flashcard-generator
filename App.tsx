@@ -34,6 +34,7 @@ const App: React.FC = () => {
     try {
       const results: CardData[] = [];
       const failures: string[] = [];
+      const allSettled: PromiseSettledResult<{ url: string, name: string }>[] = [];
 
       for (let i = 0; i < items.length; i += CONCURRENCY_LIMIT) {
         const batch = items.slice(i, i + CONCURRENCY_LIMIT);
@@ -41,6 +42,7 @@ const App: React.FC = () => {
         const settled = await Promise.allSettled(
           batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism, apiKey, model), name: item }))
         );
+        allSettled.push(...settled);
 
         settled.forEach((result, idx) => {
           const currentItem = batch[idx];
@@ -53,7 +55,9 @@ const App: React.FC = () => {
       }
 
       if (results.length === 0) {
-        setError("Failed to generate images. Please ensure your API key is correctly configured and try again.");
+        const firstFailure = allSettled.find(s => s.status === 'rejected') as PromiseRejectedResult | undefined;
+        const errorDetail = firstFailure?.reason?.message || "Check your API key and model name.";
+        setError(`Failed to generate any images. Detail: ${errorDetail}`);
         return;
       }
 
@@ -62,9 +66,9 @@ const App: React.FC = () => {
       }
 
       setGeneratedCards(results);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError("Failed to generate images. Please ensure your API key is correctly configured and try again.");
+      setError(`Error: ${e.message || "Failed to generate images. Please check your API key and connection."}`);
     } finally {
       setIsLoading(false);
     }
