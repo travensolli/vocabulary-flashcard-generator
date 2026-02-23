@@ -15,8 +15,6 @@ interface GeneratorFormProps {
   onModelChange: (model: string) => void;
 }
 
-const initialItems = "Guitar, drums, electric guitar, flute, piano, violin, cello";
-
 const REALISM_LABELS: Record<number, string> = {
   1: 'Cartoon',
   2: 'Stylized',
@@ -37,7 +35,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   model,
   onModelChange
 }) => {
-  const [inputText, setInputText] = useState<string>(initialItems);
+  const [inputText, setInputText] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
