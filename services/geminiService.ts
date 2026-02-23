@@ -191,7 +191,10 @@ export const generateFlashcard = async (
   if (!apiKey) throw new Error("API key is required.");
 
   // Use the exact same initialization sequence as the previously working server
-  const genAI = new GoogleGenAI({ apiKey });
+  const genAI = new GoogleGenAI({
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
   const effectiveModel = model || "gemini-2.5-flash-image"; // Reverting to server's default
   const sanitized = sanitizeItem(item);
   const prompt = createFlashcardPrompt(sanitized, realism, isColored);
