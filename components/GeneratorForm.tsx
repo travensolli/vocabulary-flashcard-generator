@@ -9,10 +9,11 @@ interface GeneratorFormProps {
   onColorChange: (colored: boolean) => void;
   realism: number;
   onRealismChange: (level: number) => void;
-  apiKey: string;
   onApiKeyChange: (key: string) => void;
   model: string;
   onModelChange: (model: string) => void;
+  showText: boolean;
+  onShowTextChange: (show: boolean) => void;
 }
 
 const REALISM_LABELS: Record<number, string> = {
@@ -33,7 +34,9 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   apiKey,
   onApiKeyChange,
   model,
-  onModelChange
+  onModelChange,
+  showText,
+  onShowTextChange
 }) => {
   const [inputText, setInputText] = useState<string>('');
 
@@ -74,7 +77,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
               type="text"
               value={model}
               onChange={(e) => onModelChange(e.target.value)}
-              placeholder="e.g., gemini-2.0-flash-exp"
+              placeholder="e.g., gemini-2.5-flash-image"
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out text-sm"
               disabled={isLoading}
             />
@@ -95,26 +98,50 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
           className="w-full h-28 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out resize-y"
           disabled={isLoading}
         />
-        <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex items-center gap-2">
-            <span className="text-xl" aria-hidden="true">🎨</span>
-            <label htmlFor="color-toggle" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
-              Colored flashcards
-            </label>
+        <div className="mt-4 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2">
+              <span className="text-xl" aria-hidden="true">🎨</span>
+              <label htmlFor="color-toggle" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                Colored flashcards
+              </label>
+            </div>
+            <button
+              id="color-toggle"
+              type="button"
+              role="switch"
+              aria-checked={isColored}
+              onClick={() => onColorChange(!isColored)}
+              disabled={isLoading}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isColored ? 'bg-indigo-600' : 'bg-gray-300'}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isColored ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </button>
           </div>
-          <button
-            id="color-toggle"
-            type="button"
-            role="switch"
-            aria-checked={isColored}
-            onClick={() => onColorChange(!isColored)}
-            disabled={isLoading}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isColored ? 'bg-indigo-600' : 'bg-gray-300'}`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isColored ? 'translate-x-5' : 'translate-x-0'}`}
-            />
-          </button>
+
+          <div className="flex-1 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2">
+              <span className="text-xl" aria-hidden="true">📝</span>
+              <label htmlFor="text-toggle" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                Show text on card
+              </label>
+            </div>
+            <button
+              id="text-toggle"
+              type="button"
+              role="switch"
+              aria-checked={showText}
+              onClick={() => onShowTextChange(!showText)}
+              disabled={isLoading}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${showText ? 'bg-indigo-600' : 'bg-gray-300'}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${showText ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </button>
+          </div>
         </div>
         <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">

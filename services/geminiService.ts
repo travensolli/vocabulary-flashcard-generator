@@ -81,13 +81,13 @@ const getIllustrationGuidelines = (item: string, realism: number, isColored: boo
   }
 };
 
-const getConstraints = (realism: number, isColored: boolean): string => {
+const getConstraints = (realism: number, isColored: boolean, showText: boolean): string => {
   const r = Math.max(1, Math.min(5, Math.round(realism)));
   const common = [
-    '**No extra text, captions, logos, or watermarks** — only the item name in the label area.',
+    showText ? '**No extra text, captions, logos, or watermarks** — only the item name in the label area.' : '**Strictly NO TEXT, LETTERS, WORDS, or WRITING anywhere on the image, not even the item name.**',
     '**No background scenery or secondary objects**.',
     '**The card must stand alone** — do not render a table, hand, or anything holding the card.',
-    '**Font must be Montserrat Extra-Bold 800**.',
+    ...(showText ? ['**Font must be Montserrat Extra-Bold 800**.'] : []),
   ];
 
   let specific: string[] = [];
@@ -111,12 +111,13 @@ const getConstraints = (realism: number, isColored: boolean): string => {
   return [...specific, ...common].map((c, i) => `${i + 1}. ${c}`).join('\n');
 };
 
-const getChecklist = (realism: number, isColored: boolean): string => {
+const getChecklist = (realism: number, isColored: boolean, showText: boolean): string => {
   const r = Math.max(1, Math.min(5, Math.round(realism)));
   const base = [
     'Card has a visible rounded-border frame.',
-    'There is a clear horizontal divider between illustration and label.',
+    ...(showText ? ['There is a clear horizontal divider between illustration and label.'] : []),
     'The illustration is centred and recognisable.',
+    ...(showText ? [] : ['There is no text, divider, or label area; only the illustration inside the frame.']),
   ];
   if (!isColored) {
     if (r <= 3) base.push('Strictly black-and-white with no greys.');
@@ -130,7 +131,7 @@ const getChecklist = (realism: number, isColored: boolean): string => {
   return base.map(c => `- [ ] ${c}`).join('\n');
 };
 
-const createFlashcardPrompt = (item: string, realism: number, isColored: boolean): string => {
+const createFlashcardPrompt = (item: string, realism: number, isColored: boolean, showText: boolean): string => {
   const label = item.toUpperCase();
   const style = getRealismStyle(realism);
   let illustrationDesc = realism <= 3 ? (isColored ? "full-colour drawing" : "line-art drawing") :
@@ -151,22 +152,24 @@ Generate **one** vocabulary flashcard image for the item: **"${item}"**.
 
 ## CARD SPECIFICATIONS
 - **Outer card**: 3:4 portrait ratio, solid black rounded border on white.
-- **Illustration area**: Top 75%, centred ${illustrationDesc}.
+${showText ? `- **Illustration area**: Top 75%, centred ${illustrationDesc}.
 - **Divider**: Solid black horizontal line.
-- **Label area**: Bottom 25%, text "${label}" in Montserrat Extra-Bold (800).
+- **Label area**: Bottom 25%, text "${label}" in Montserrat Extra-Bold (800).` : `- **Illustration area**: 100% of the space inside the rounded border, centred ${illustrationDesc}.
+- **No Text**: The card MUST NOT have a divider line, label area, or any text whatsoever.`}
 
 ### Guidelines
 ${getIllustrationGuidelines(item, realism, isColored)}
 
-### Typography
+${showText ? `### Typography
 - Font: Montserrat Extra-Bold 800.
-- Text: "${label}".
+- Text: "${label}".` : `### Typography
+- STRICTLY NO TEXT.`}
 
 ## STRICT CONSTRAINTS
-${getConstraints(realism, isColored)}
+${getConstraints(realism, isColored, showText)}
 
 ## QUALITY CHECKLIST
-${getChecklist(realism, isColored)}
+${getChecklist(realism, isColored, showText)}
 `.trim();
 };
 
@@ -186,7 +189,8 @@ export const generateFlashcard = async (
   isColored: boolean = false,
   realism: number = 3,
   apiKey?: string,
-  model?: string
+  model?: string,
+  showText: boolean = true
 ): Promise<string> => {
   if (!apiKey) throw new Error("API key is required.");
 
@@ -197,7 +201,7 @@ export const generateFlashcard = async (
   });
   const effectiveModel = model || "gemini-2.5-flash-image"; // Reverting to server's default
   const sanitized = sanitizeItem(item);
-  const prompt = createFlashcardPrompt(sanitized, realism, isColored);
+  const prompt = createFlashcardPrompt(sanitized, realism, isColored, showText);
 
   let lastError: any;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

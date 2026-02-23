@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isColored, setIsColored] = useState<boolean>(false);
+  const [showText, setShowText] = useState<boolean>(true);
   const [realism, setRealism] = useState<number>(3);
   const [apiKey, setApiKey] = useState<string>('');
   const [model, setModel] = useState<string>('');
@@ -40,7 +41,7 @@ const App: React.FC = () => {
         const batch = items.slice(i, i + CONCURRENCY_LIMIT);
 
         const settled = await Promise.allSettled(
-          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism, apiKey, model), name: item }))
+          batch.map(async (item) => ({ url: await generateFlashcard(item, isColored, realism, apiKey, model, showText), name: item }))
         );
         allSettled.push(...settled);
 
@@ -89,6 +90,8 @@ const App: React.FC = () => {
           onApiKeyChange={setApiKey}
           model={model}
           onModelChange={setModel}
+          showText={showText}
+          onShowTextChange={setShowText}
         />
 
         <div className="mt-12">
